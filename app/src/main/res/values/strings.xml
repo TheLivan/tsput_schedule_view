@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">Televisor</string>
+    <string name="error_text">Ошибка чтения конфига</string>
+    <string name="error_out">Ошибка: %s</string>
+    <string name="test_out">Тест: %s</string>
+    <string name="loading">Загрузка...</string>
 </resources>
