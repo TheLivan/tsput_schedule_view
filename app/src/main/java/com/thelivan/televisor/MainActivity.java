@@ -45,32 +45,40 @@ public class MainActivity extends AppCompatActivity {
     private void loadConfig() {
         Thread getData = new Thread(() -> {
 
-            LocalConfig.Data defaultData = new LocalConfig.Data("https://thelivan.github.io/config.json");
+            LocalConfig.Data defaultData = new LocalConfig.Data("https://thelivan.github.io/config.json", new ArrayList<>());
             LocalConfig.Data data = LocalConfig.load(getBaseContext());
             if (data == null) {
                 data = defaultData;
                 LocalConfig.save(getBaseContext(), defaultData);
             }
 
-            RequestHandler requestHandler = new RequestHandler();
-            try {
-                String s = requestHandler.doRequest(data.getConfigLink());
-                List<SiteConfig> sites = new ArrayList<>();
+            if (data.getSiteConfigList().isEmpty()) {
+                RequestHandler requestHandler = new RequestHandler();
+                try {
+                    String s = requestHandler.doRequest(data.getConfigLink());
+                    List<SiteConfig> sites = new ArrayList<>();
 
-                JsonParser parser = new JsonParser();
-                JsonObject object = (JsonObject) parser.parse(new StringReader(s));
-                JsonArray array = object.get("sites").getAsJsonArray();
-                for (int i = 0; i < array.size(); i++) {
-                    JsonObject o1 = array.get(i).getAsJsonObject();
-                    sites.add(new SiteConfig(o1.get("link").getAsString(), o1.get("time").getAsInt()));
+                    JsonParser parser = new JsonParser();
+                    JsonObject object = (JsonObject) parser.parse(new StringReader(s));
+                    JsonArray array = object.get("sites").getAsJsonArray();
+                    for (int i = 0; i < array.size(); i++) {
+                        JsonObject o1 = array.get(i).getAsJsonObject();
+                        sites.add(new SiteConfig(o1.get("link").getAsString(), o1.get("time").getAsInt()));
+                    }
+                    runOnUiThread(() -> {
+                        init(sites);
+                        loadingStop();
+                    });
+                } catch (Exception e) {
+                    runOnUiThread(() -> {
+                        onError(e.getMessage());
+                    });
                 }
+            } else {
+                LocalConfig.Data finalData = data;
                 runOnUiThread(() -> {
-                    init(sites);
+                    init(finalData.getSiteConfigList());
                     loadingStop();
-                });
-            } catch (Exception e) {
-                runOnUiThread(() -> {
-                    onError(e.getMessage());
                 });
             }
         });

@@ -6,6 +6,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.List;
 
 public class LocalConfig {
     private static final String FILE_NAME = "localConfig.json";
@@ -36,16 +37,22 @@ public class LocalConfig {
 
     public static class Data {
         String configLink;
+        List<SiteConfig> siteConfigList;
 
         public Data() {
         }
 
-        public Data(String configLink) {
+        public Data(String configLink, List<SiteConfig> siteConfigList) {
             this.configLink = configLink;
+            this.siteConfigList = siteConfigList;
         }
 
         public String getConfigLink() {
             return configLink;
+        }
+
+        public List<SiteConfig> getSiteConfigList() {
+            return siteConfigList;
         }
     }
 }
