@@ -12,6 +12,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.thelivan.televisor.config.LocalConfig;
 import com.thelivan.televisor.config.SiteConfig;
 import com.thelivan.televisor.inet.RequestHandler;
 
@@ -23,7 +24,7 @@ import java.util.TimerTask;
 
 public class MainActivity extends AppCompatActivity {
     private WebView webView;
-    private List<SiteConfig> urls;
+    private List<SiteConfig> siteConfigs;
     private final Timer timer = new Timer();
     private final Handler handler = new Handler();
     private int currentPage = 0;
@@ -43,10 +44,17 @@ public class MainActivity extends AppCompatActivity {
 
     private void loadConfig() {
         Thread getData = new Thread(() -> {
+
+            LocalConfig.Data defaultData = new LocalConfig.Data("https://thelivan.github.io/config.json");
+            LocalConfig.Data data = LocalConfig.load(getBaseContext());
+            if (data == null) {
+                data = defaultData;
+                LocalConfig.save(getBaseContext(), defaultData);
+            }
+
             RequestHandler requestHandler = new RequestHandler();
-            TextView textView = findViewById(R.id.textView);
             try {
-                String s = requestHandler.doRequest("https://thelivan.github.io/config.json");
+                String s = requestHandler.doRequest(data.getConfigLink());
                 List<SiteConfig> sites = new ArrayList<>();
 
                 JsonParser parser = new JsonParser();
@@ -60,8 +68,10 @@ public class MainActivity extends AppCompatActivity {
                     init(sites);
                     loadingStop();
                 });
-            } catch (Throwable e) {
-                textView.setText(String.format(getResources().getString(R.string.error_out), e.getMessage()));
+            } catch (Exception e) {
+                runOnUiThread(() -> {
+                    onError(e.getMessage());
+                });
             }
         });
         getData.start();
@@ -72,9 +82,9 @@ public class MainActivity extends AppCompatActivity {
         textView.setText(null);
     }
 
-    private void onError() {
+    private void onError(String error) {
         TextView textView = findViewById(R.id.textView);
-        textView.setText(getResources().getString(R.string.error_text));
+        textView.setText(String.format(getResources().getString(R.string.error_out), error));
     }
 
     private void init(List<SiteConfig> siteConfigs) {
@@ -84,18 +94,18 @@ public class MainActivity extends AppCompatActivity {
         webView.setBackgroundColor(Color.parseColor("#3498db"));
         webView.setWebViewClient(new WebViewClient());
 
-        urls = siteConfigs;
+        this.siteConfigs = siteConfigs;
 
         changePage(0);
 
-        int time = urls.get(currentPage).getTime();
+        int time = this.siteConfigs.get(currentPage).getTime();
         timer.schedule(new SiteTimerTask(), time);
     }
 
     class SiteTimerTask extends TimerTask {
         @Override
         public void run() {
-            handler.post(() -> changePage(++currentPage % urls.size()));
+            handler.post(() -> changePage(++currentPage % siteConfigs.size()));
             timer.schedule(new TimerTask() {
                 @Override
                 public void run() {
@@ -107,12 +117,12 @@ public class MainActivity extends AppCompatActivity {
 
     private void changePage(int index) {
         currentPage = index;
-        webView.loadUrl(urls.get(index).getLink());
+        webView.loadUrl(siteConfigs.get(index).getLink());
     }
 
     private SiteConfig nextPage() {
         int next = currentPage + 1;
-        return urls.get(next % urls.size());
+        return siteConfigs.get(next % siteConfigs.size());
     }
 
     @Override
