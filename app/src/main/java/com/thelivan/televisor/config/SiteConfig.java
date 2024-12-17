@@ -1,8 +1,8 @@
 package com.thelivan.televisor.config;
 
 public class SiteConfig {
-    public String link;
-    public int time;
+    private String link;
+    private int time;
 
     public SiteConfig(String link, int time) {
         this.link = link;

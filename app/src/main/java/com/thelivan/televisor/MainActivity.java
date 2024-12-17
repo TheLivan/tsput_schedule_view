@@ -1,5 +1,6 @@
 package com.thelivan.televisor;
 
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.webkit.WebView;
@@ -22,8 +23,7 @@ import java.util.TimerTask;
 
 public class MainActivity extends AppCompatActivity {
     private WebView webView;
-    private List<String> urls;
-    private static final int DELAY = 30_000;
+    private List<SiteConfig> urls;
     private final Timer timer = new Timer();
     private final Handler handler = new Handler();
     private int currentPage = 0;
@@ -80,25 +80,39 @@ public class MainActivity extends AppCompatActivity {
     private void init(List<SiteConfig> siteConfigs) {
         webView = findViewById(R.id.webView);
         webView.getSettings().setJavaScriptEnabled(true);
+        webView.getSettings().setDefaultTextEncodingName("utf-8");
+        webView.setBackgroundColor(Color.parseColor("#3498db"));
         webView.setWebViewClient(new WebViewClient());
 
-        urls = new ArrayList<>();
-        siteConfigs.stream().forEach(x -> urls.add(x.getLink()));
+        urls = siteConfigs;
 
         changePage(0);
 
-        TimerTask task = new TimerTask() {
-            @Override
-            public void run() {
-                handler.post(() -> changePage(++currentPage % urls.size()));
-            }
-        };
-        timer.schedule(task, DELAY, DELAY);
+        int time = urls.get(currentPage).getTime();
+        timer.schedule(new SiteTimerTask(), time);
+    }
+
+    class SiteTimerTask extends TimerTask {
+        @Override
+        public void run() {
+            handler.post(() -> changePage(++currentPage % urls.size()));
+            timer.schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    SiteTimerTask.this.run();
+                }
+            }, nextPage().getTime());
+        }
     }
 
     private void changePage(int index) {
         currentPage = index;
-        webView.loadUrl(urls.get(index));
+        webView.loadUrl(urls.get(index).getLink());
+    }
+
+    private SiteConfig nextPage() {
+        int next = currentPage + 1;
+        return urls.get(next % urls.size());
     }
 
     @Override
